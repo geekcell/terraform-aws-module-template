@@ -1,0 +1,63 @@
+---
+#########################
+## Sync template files ##
+#########################
+
+#
+# Documentation:
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+#
+
+name: Sync templates
+on:
+  workflow_dispatch: # Trigger manually
+  schedule:
+    - cron:  "0 0 1 * *"  # Run at 00:00 on the first day of every month
+
+##########################
+# Prevent duplicate jobs #
+##########################
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+###############
+# Run the job #
+###############
+jobs:
+  ###############
+  # Sync labels #
+  ###############
+  sync-labels:
+    name: Sync labels
+    runs-on: ubuntu-latest
+    steps:
+      ##################################
+      # Sync labels with template Repo #
+      ##################################
+      - name: Sync labels
+        uses: EndBug/label-sync@v2.3.1
+        with:
+          config-file: https://gist.githubusercontent.com/Ic3w0lf/f5520c5f19d7098966f692c120f7a197/raw/75b134f76fbc55e2e64bd66f04e571d6d74b815e/terraform-aws-module-labels.yaml
+
+  #######################
+  # Sync template files #
+  #######################
+  sync-template-files:
+    name: Sync template files
+    runs-on: ubuntu-latest
+    steps:
+      ############################
+      # Checkout the source code #
+      ############################
+      - name: Checkout Code
+        uses: actions/checkout@v3.1.0
+
+      #######################
+      # Sync template files #
+      #######################
+      - name: actions-template-sync
+        uses: AndreasAugustin/actions-template-sync@v0.7.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_repo_path: geekcell/terraform-aws-module-template
